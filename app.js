@@ -18,6 +18,7 @@ app.use(express.urlencoded({ extended: false }))
 /**
  * ------------- POSTGRES SETUP -----------
  */
+// const { pool } = require('./db/pool')
 const { Pool } = require('pg')
 const expressSession = require('express-session')
 const pgSession = require('connect-pg-simple')(expressSession)
@@ -115,8 +116,23 @@ app.use((req, res, next) => {
   next()
 })
 
-app.get('/', (req, res) => {
-  res.render('index', { user: req.user })
+app.get('/', async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT 
+      messages.id AS message_id,
+      messages.title,
+      messages.text,
+      messages.created_at AS message_created_at,
+      users.first_name,
+      users.last_name
+    FROM 
+      messages
+    INNER JOIN 
+      users
+    ON 
+      messages.author_id = users.id;`,
+  )
+  res.render('index', { user: req.user, messages: rows })
 })
 
 app.get('/signup', (req, res) => res.render('signUpForm'))
@@ -158,6 +174,15 @@ app.post(
     failureRedirect: '/',
   }),
 )
+
+app.get('/logout', (req, res, next) => {
+  req.logout((err) => {
+    if (err) {
+      return next(err)
+    }
+    res.redirect('/')
+  })
+})
 
 /**
  *  ---------------- SERVER ---------------

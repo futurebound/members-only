@@ -8,6 +8,7 @@
     <% if (currentUser) {%>
     <h1>WELCOME BACK <%= currentUser.email %></h1>
     <a href="/logout">LOG OUT</a>
+    <a href="/messages/new">CREATE NEW MESSAGE</a>
     <% } else { %>
     <h1>please log in</h1>
     <form action="/login" method="POST">
@@ -23,5 +24,20 @@
       <button>Log In</button>
     </form>
     <%}%>
+    <!-- TODO: display all messages here -->
+    <ul>
+      <% messages.map((message) => { %>
+      <li>
+        <% if (currentUser) {%>
+        <p>Author: <%= message.first_name %> <%= message.last_name %></p>
+        <p>Date: <%= message.created_date %></p>
+        <% } %>
+        <p>Text: <%= message.text %></p>
+        <!-- <a href="/messages/<%= message.id %>">
+          <button>View Full Message</button>
+        </a> -->
+      </li>
+      <% })%>
+    </ul>
   </body>
 </html>
