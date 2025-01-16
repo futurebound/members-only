@@ -13,7 +13,7 @@ const { body, validationResult } = require('express-validator')
 const express = require('express')
 const app = express()
 app.use(express.json())
-app.use(express.urlencoded({ extended: false }))
+app.use(express.urlencoded({ extended: true }))
 
 /**
  * ------------- POSTGRES SETUP -----------
@@ -116,6 +116,13 @@ app.use((req, res, next) => {
   next()
 })
 
+const isAuthenticated = (req, res, next) => {
+  if (req.isAuthenticated()) {
+    return next()
+  }
+  res.redirect('/')
+}
+
 app.get('/', async (req, res) => {
   const { rows } = await pool.query(
     `SELECT 
@@ -193,6 +200,35 @@ app.post('/messages', async (req, res, next) => {
       `INSERT INTO messages (title, text, author_id) VALUES ($1, $2, $3)`,
       [req.body.title, req.body.text, req.user.id],
     )
+    res.redirect('/')
+  } catch (err) {
+    return next(err)
+  }
+})
+
+app.get('/member', isAuthenticated, (req, res) => {
+  res.render('memberForm')
+})
+
+app.post('/member', async (req, res, next) => {
+  const { id } = req.user
+  const { memberCode } = req.body
+  console.log(`id: ${id} memberCode: ${memberCode}`)
+  try {
+    const isValidCode = process.env.MEMBER_CODE === memberCode
+    if (!isValidCode) {
+      return res.status(400).json({ message: 'Invalid member code' })
+    }
+
+    const { rows } = await pool.query(
+      `UPDATE users SET is_member = true WHERE id = $1 RETURNING *`,
+      [id],
+    )
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
     res.redirect('/')
   } catch (err) {
     return next(err)
