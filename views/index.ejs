@@ -30,7 +30,7 @@
       <li>
         <% if (currentUser) {%>
         <p>Author: <%= message.first_name %> <%= message.last_name %></p>
-        <p>Date: <%= message.created_date %></p>
+        <p>Date: <%= message.created_at %></p>
         <% } %>
         <p>Text: <%= message.text %></p>
         <!-- <a href="/messages/<%= message.id %>">

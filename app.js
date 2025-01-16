@@ -122,7 +122,7 @@ app.get('/', async (req, res) => {
       messages.id AS message_id,
       messages.title,
       messages.text,
-      messages.created_at AS message_created_at,
+      messages.created_at,
       users.first_name,
       users.last_name
     FROM 
@@ -185,6 +185,18 @@ app.get('/logout', (req, res, next) => {
 })
 
 app.get('/new', (req, res) => res.render('newMessageForm'))
+
+app.post('/messages', async (req, res, next) => {
+  try {
+    await pool.query(
+      `INSERT INTO messages (title, text, author_id) VALUES ($1, $2, $3)`,
+      [req.body.title, req.body.text, req.user.id],
+    )
+    res.redirect('/')
+  } catch (err) {
+    return next(err)
+  }
+})
 
 /**
  *  ---------------- SERVER ---------------
