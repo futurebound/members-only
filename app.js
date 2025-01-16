@@ -235,6 +235,30 @@ app.post('/member', async (req, res, next) => {
   }
 })
 
+app.post('/messages/:id', async (req, res, next) => {
+  const messageId = req.params.id
+  console.log('MessageID:', messageId)
+
+  try {
+    if (!req.user || !req.user.is_admin) {
+      return res.redirect('/')
+    }
+
+    const { rows } = await pool.query(
+      `DELETE FROM messages WHERE id = $1 RETURNING *`,
+      [messageId],
+    )
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Message not found' })
+    }
+
+    res.redirect('/')
+  } catch (err) {
+    next(err)
+  }
+})
+
 /**
  *  ---------------- SERVER ---------------
  */

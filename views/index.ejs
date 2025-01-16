@@ -33,9 +33,11 @@
         <p>Date: <%= message.created_at %></p>
         <% } %>
         <p>Text: <%= message.text %></p>
-        <!-- <a href="/messages/<%= message.id %>">
-          <button>View Full Message</button>
-        </a> -->
+        <% if (currentUser && currentUser.is_admin) {%>
+        <form action="/messages/<%= message.message_id %>" method="POST">
+          <button type="submit">Delete</button>
+        </form>
+        <% } %>
       </li>
       <% })%>
     </ul>
