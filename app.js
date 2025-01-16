@@ -154,12 +154,13 @@ app.post(
           return next(err)
         }
 
-        const { firstName, lastName, email } = req.body
+        const { firstName, lastName, email, isAdmin } = req.body
+        // console.log(isAdmin)
         await pool.query(
-          'INSERT INTO users (first_name, last_name, email, password) VALUES ($1, $2, $3, $4)',
-          [firstName, lastName, email, hashedPassword],
+          'INSERT INTO users (first_name, last_name, email, password, is_admin) VALUES ($1, $2, $3, $4, $5)',
+          [firstName, lastName, email, hashedPassword, isAdmin],
         )
-        res.json({ message: 'User created successfully ' })
+        res.redirect('/')
       })
     } catch (err) {
       return next(err)

@@ -1,0 +1,20 @@
+<html>
+  <head>
+    <title>Member Form</title>
+  </head>
+  <body>
+    <% if (currentUser) {%>
+    <h1>WELCOME BACK <%= currentUser.email %></h1>
+    <a href="/logout">LOG OUT</a>
+    <a href="/new">CREATE NEW MESSAGE</a>
+    <% } %>
+    <h1>Become a Member</h1>
+    <form method="POST" action="/member">
+      <section>
+        <label for="member">Title:</label>
+        <input type="text" id="member" name="member" required />
+      </section>
+      <button type="submit">Send Message</button>
+    </form>
+  </body>
+</html>
