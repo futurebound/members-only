@@ -1,9 +1,11 @@
-const bcrypt = require('bcryptjs')
 const dotenv = require('dotenv')
-const { body, validationResult } = require('express-validator')
 dotenv.config()
 
+const bcrypt = require('bcryptjs')
 const path = require('node:path')
+const passport = require('passport')
+const LocalStrategy = require('passport-local').Strategy
+const { body, validationResult } = require('express-validator')
 
 /**
  * ------------- EXPRESS SETUP -----------
@@ -17,9 +19,86 @@ app.use(express.urlencoded({ extended: false }))
  * ------------- POSTGRES SETUP -----------
  */
 const { Pool } = require('pg')
+const expressSession = require('express-session')
+const pgSession = require('connect-pg-simple')(expressSession)
 
 const pool = new Pool({
   connectionString: process.env.DB_URI,
+})
+
+const sessionStore = new pgSession({
+  pool: pool,
+  tableName: 'session',
+  createTableIfMissing: true,
+})
+
+app.use(
+  expressSession({
+    store: sessionStore,
+    secret: process.env.SECRET,
+    resave: true,
+    saveUninitialized: true,
+    cookie: {
+      // 1000ms = 1s, 60s = 1m, 60m = 1hr, 24hr = 1day
+      maxAge: 1000 * 60 * 60 * 24,
+      secure: false,
+    }, // 1 day
+  }),
+)
+
+// logging middleware to verify session created
+app.use((req, res, next) => {
+  console.log('Session ID:', req.sessionID)
+  console.log('Session:', req.session)
+  next()
+})
+
+/**
+ * ---------------- PASSPORT ----------------
+ */
+app.use(passport.session())
+passport.use(
+  new LocalStrategy(
+    {
+      usernameField: 'email',
+      passwordField: 'password',
+    },
+    async (email, password, done) => {
+      try {
+        const { rows } = await pool.query(
+          'SELECT * FROM users WHERE email = $1',
+          [email],
+        )
+        const user = rows[0]
+
+        if (!user) {
+          return done(null, false, { message: 'Incorrect email' })
+        }
+        const match = await bcrypt.compare(password, user.password)
+        if (!match) {
+          return done(null, false, { message: 'Incorrect password' })
+        }
+        return done(null, user)
+      } catch (err) {
+        return done(err)
+      }
+    },
+  ),
+)
+
+passport.serializeUser((user, done) => {
+  done(null, user.id)
+})
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [id])
+    const user = rows[0]
+
+    done(null, user)
+  } catch (err) {
+    done(err)
+  }
 })
 
 /**
@@ -31,6 +110,15 @@ app.set('view engine', 'ejs')
 /**
  * ---------------- ROUTES ----------------
  */
+app.use((req, res, next) => {
+  res.locals.currentUser = req.user
+  next()
+})
+
+app.get('/', (req, res) => {
+  res.render('index', { user: req.user })
+})
+
 app.get('/signup', (req, res) => res.render('signUpForm'))
 app.post(
   '/signup',
@@ -61,6 +149,14 @@ app.post(
       return next(err)
     }
   },
+)
+
+app.post(
+  '/login',
+  passport.authenticate('local', {
+    successRedirect: '/',
+    failureRedirect: '/',
+  }),
 )
 
 /**
