@@ -28,7 +28,7 @@
     <ul>
       <% messages.map((message) => { %>
       <li>
-        <% if (currentUser && currentUser.is_admin) {%>
+        <% if (currentUser && currentUser.is_member) {%>
         <p>Author: <%= message.first_name %> <%= message.last_name %></p>
         <p>Date: <%= message.created_at %></p>
         <% } %>
